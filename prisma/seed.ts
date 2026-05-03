@@ -6,10 +6,10 @@ async function main() {
   // Footer links
   await prisma.footerLink.createMany({
     data: [
-      { label: "GitHub", url: "https://github.com/idrislawal", icon: "Github", order: 0 },
+      { label: "GitHub", url: "https://github.com/blawidris", icon: "Github", order: 0 },
       { label: "LinkedIn", url: "https://linkedin.com/in/idrislawal", icon: "Linkedin", order: 1 },
-      { label: "Twitter", url: "https://twitter.com/idrislawal", icon: "Twitter", order: 2 },
-      { label: "Email", url: "mailto:Blawidris@gmail.com", icon: "Mail", order: 3 },
+      { label: "Twitter", url: "https://twitter.com/blawidris", icon: "Twitter", order: 2 },
+      { label: "Email", url: "mailto:blawidris@gmail.com", icon: "Mail", order: 3 },
     ],
     skipDuplicates: true,
   })
@@ -21,12 +21,40 @@ async function main() {
       slug: "eonsfleet-mobility-solutions",
       category: "work",
       description:
-        "Multi-tenant fleet management SaaS — real-time vehicle tracking, driver management, billing engine, and reporting for logistics companies across West Africa.",
-      content: `## Overview\n\nEonsFleet is a multi-tenant SaaS platform for fleet management, purpose-built for logistics companies operating in West Africa.\n\n## Problem\n\nFleet operators had no reliable, affordable tool for real-time visibility into vehicle locations, driver behaviour, and fuel consumption. Existing solutions were either too expensive or built for Western markets.\n\n## Solution\n\nBuilt a full-stack SaaS with per-tenant data isolation (row-level security), real-time GPS tracking via WebSockets, a billing engine that supports multiple pricing tiers, and detailed reporting dashboards.\n\n## Stack\n\nNode.js, Next.js, PostgreSQL, Prisma, Redis, WebSockets, AWS EC2, Paystack.\n\n## Outcome\n\nServing multiple logistics companies across Nigeria and Ghana with a 99.7% uptime SLA.`,
+        "Fleet management SaaS built from the ground up for African logistics operators.",
+      content: `## The Problem
+
+African logistics operators had no reliable, affordable fleet management tool built for local market conditions — poor connectivity, high operational costs, and limited real-time visibility into vehicle movement. Most available tools were built for Western markets and priced accordingly.
+
+## My Role
+
+I joined as the sole backend engineer and eventually became Lead Engineer, taking ownership of architecture, DevOps, frontend migration, and client-facing technical work.
+
+## Technical Decisions
+
+- **Laravel monolith** — chosen for productivity and ecosystem maturity; premature microservices would have slowed the team down
+- **PostgreSQL + Redis** — Postgres as the primary store, Redis for queues (Laravel Horizon) and caching
+- **3-server AWS architecture (af-south-1)** — App server, DB server, cache server; region chosen for latency to Nigerian users
+- **Terraform IaC** — all infrastructure version-controlled; reproducible environments
+- **Leaflet + OpenStreetMap** — migrated from Google Maps to cut licensing costs without sacrificing UX
+- **React/TypeScript frontend** — migrated from JavaScript using Atomic Design, Zustand for state, TanStack Query for server state
+
+## Key Challenges & Solutions
+
+**Redis queue crisis:** Discovered 9 million backed-up jobs in the queue caused by a misconfigured worker and a long-running job blocking shorter ones. Resolved by restructuring job queues into priority tiers, scaling Horizon workers, and draining the backlog without downtime or data loss.
+
+**Frontend migration:** Migrated a large JavaScript codebase to TypeScript incrementally — new components written in TypeScript first, existing components migrated in priority order. Introduced Atomic Design system to enforce consistency across a growing codebase.
+
+## Outcomes & Impact
+
+- Platform in active production use by logistics operators
+- Secured an **MTN Nigeria PoC trial agreement** — a major enterprise validation milestone
+- Resolved infrastructure crises that would have caused data loss and extended downtime
+- Reduced frontend bug rate significantly after TypeScript migration`,
       type: "web",
       status: "live",
-      year: 2022,
-      stack: ["Next.js", "Node.js", "PostgreSQL", "Prisma", "Redis", "WebSockets", "AWS"],
+      year: 2023,
+      stack: ["Laravel", "PostgreSQL", "Redis", "React", "TypeScript", "AWS", "Terraform"],
       featured: true,
       order: 0,
     },
@@ -35,12 +63,49 @@ async function main() {
       slug: "tts-nigeria-3mtt-platform",
       category: "work",
       description:
-        "Technical training management platform for Nigeria's 3 Million Technical Talent government initiative — cohort management, progress tracking, and certificate issuance.",
-      content: `## Overview\n\nThe 3MTT platform powers Nigeria's government-backed initiative to train 3 million technical talents. It handles learner enrollment, cohort management, assessment delivery, and verified certificate issuance at scale.\n\n## Challenge\n\nThe system needed to support hundreds of thousands of concurrent learners with robust role-based access (learner, facilitator, coordinator, admin) and comply with government reporting requirements.\n\n## Technical Approach\n\nBuilt on Next.js with a Postgres backend, heavy use of background jobs for certificate generation, and a hierarchical permissions system for multi-role access.\n\n## Outcome\n\nCurrently in active rollout with tens of thousands of enrolled learners.`,
+        "Multi-tenant SaaS platform for BPO workforce development — part of Nigeria's 3MTT government initiative.",
+      content: `## The Problem
+
+Nigeria's 3 Million Technical Talent (3MTT) initiative needed a platform to manage BPO workforce development at scale — across multiple training providers, cohorts, and employer partners. The existing processes were manual, fragmented, and couldn't scale to the programme's ambitions.
+
+## My Role
+
+Lead Backend Engineer at Davton, responsible for architecture, implementation planning, and backend development of the platform.
+
+## Technical Decisions
+
+- **Multi-tenancy with row-level isolation** — each BPO client operates in the same database with strict tenant-scoped queries enforced at the repository layer; chosen over schema-per-tenant for operational simplicity at current scale
+- **Participant FSM (Finite State Machine)** — participants move through defined states (enrolled → active → assessed → placed); state transitions are explicit and auditable
+- **Provider abstraction layer** — assessment and identity providers (Skilladder, Prembly) are wrapped behind interfaces, making them swappable without business logic changes
+- **BullMQ for async workloads** — bulk participant processing, notification dispatch, and report generation run as background jobs to keep API response times fast
+- **Fastify over Express** — lower overhead, TypeScript-first, better schema validation via JSON Schema
+
+## Architecture Overview
+
+\`\`\`
+API Layer (Fastify)
+  └── Route handlers → Service layer → Repository layer → PostgreSQL
+                    ↘ BullMQ job queue → Workers
+                    ↘ Provider adapters (Skilladder, Prembly)
+\`\`\`
+
+Tenancy enforced at repository level — every query scopes by \`tenantId\` extracted from the JWT.
+
+## Key Challenges & Solutions
+
+**Assessment provider abstraction:** Different clients required different assessment providers. Built a provider interface with adapters per provider — the service layer never calls providers directly, only through the interface. Adding a new provider is a new adapter file, not a system change.
+
+**Placement pipeline complexity:** Matching participants to job openings required considering skills, location, availability, and employer requirements simultaneously. Built a scoring-based pairing engine that produces ranked match lists, reviewable before placement is confirmed.
+
+## Outcomes & Impact
+
+- Platform actively in development with a deployment roadmap targeting end of May 2026
+- Architecture supports onboarding new BPO tenants without schema changes
+- Placement pipeline designed to handle thousands of participant-to-job matches per cohort`,
       type: "web",
       status: "in-progress",
-      year: 2023,
-      stack: ["Next.js", "TypeScript", "PostgreSQL", "Prisma", "Auth.js", "Tailwind CSS"],
+      year: 2025,
+      stack: ["Node.js", "TypeScript", "Fastify", "PostgreSQL", "BullMQ", "AWS"],
       featured: true,
       order: 1,
     },
@@ -49,12 +114,36 @@ async function main() {
       slug: "davton-lms",
       category: "work",
       description:
-        "Learning management system with course delivery, assessment engine, multi-instructor support, and Paystack payments integration.",
-      content: `## Overview\n\nDavton LMS is a learning management system designed for Nigerian training institutions.\n\n## Features\n\n- Course authoring with video, documents, and quizzes\n- Assessment engine with automatic grading\n- Multi-instructor course management\n- Learner progress tracking and certificates\n- Paystack integration for course purchases\n\n## Tech\n\nNode.js REST API, PostgreSQL, Cloudinary for media, Paystack for payments.`,
+        "Enterprise learning management system with SCORM player support — performance engineering on a Go + Laravel stack.",
+      content: `## The Problem
+
+The Davton LMS was serving enterprise clients but suffering from SCORM player performance degradation under concurrent load and periodic MySQL CPU saturation that was causing slow queries and cascading timeouts across the platform.
+
+## My Role
+
+Backend engineer at Davton — brought in to diagnose and resolve performance issues and contribute to ongoing feature development.
+
+## Technical Decisions
+
+- **Go (Fiber) for performance-critical paths** — SCORM player interactions, progress tracking, and content delivery moved to a Go service for its low overhead and goroutine-based concurrency
+- **Laravel retained for content management** — admin workflows, course authoring, and reporting stay in Laravel where developer productivity matters more than raw throughput
+- **MySQL query optimisation** — identified and rewrote slow queries; added missing indexes; restructured N+1 patterns
+
+## Key Challenges & Solutions
+
+**MySQL CPU saturation:** Diagnosed a critical issue where a scheduled Laravel command was overlapping with itself on each run — the command had no mutex/lock, so multiple instances ran concurrently, each issuing expensive queries. Resolved by implementing a cache-based lock that prevents concurrent execution, plus query optimisation to reduce the command's footprint even in the single-instance case.
+
+**SCORM player degradation:** SCORM xAPI calls were hitting the Laravel monolith synchronously, creating a bottleneck under concurrent learner sessions. Moved SCORM interaction processing to the Go service with async persistence, reducing p99 response time significantly.
+
+## Outcomes & Impact
+
+- MySQL CPU saturation crisis resolved — platform stability restored
+- SCORM player performance improved under concurrent load
+- Architecture pattern established for future performance-critical features`,
       type: "web",
       status: "live",
-      year: 2021,
-      stack: ["Node.js", "Express", "PostgreSQL", "Cloudinary", "Paystack"],
+      year: 2025,
+      stack: ["Go", "Fiber", "Laravel", "PHP", "MySQL", "DigitalOcean"],
       featured: false,
       order: 2,
     },
@@ -63,12 +152,36 @@ async function main() {
       slug: "paybills",
       category: "side-project",
       description:
-        "Cross-platform mobile bill payments app — airtime, data, electricity, cable TV, and more. Built with React Native for iOS and Android.",
-      content: `## Overview\n\nPaybills is a consumer mobile app for paying utility bills in Nigeria — airtime top-up, data bundles, electricity (prepaid tokens), cable TV subscriptions, and more.\n\n## Technical Highlights\n\n- React Native for both iOS and Android from a single codebase\n- Integrated with VTPass and Flutterwave for bill payment APIs\n- PIN-based transaction authentication\n- Transaction history with offline cache\n\n## Outcome\n\nLive on both App Store and Google Play.`,
+        "Cross-platform fintech app for bills payment and event ticket booking.",
+      content: `## The Problem
+
+Paying utility bills and booking event tickets in Nigeria involves juggling multiple apps and platforms, each with inconsistent UX and reliability issues. Paybills consolidates both into a single, reliable mobile experience.
+
+## My Role
+
+Mobile engineer — responsible for the full React Native application, payment flow implementation, and third-party service integrations.
+
+## Technical Decisions
+
+- **React Native + TypeScript** — single codebase for iOS and Android; TypeScript enforced from the start to catch integration contract mismatches early
+- **Payment gateway integration** — integrated a Nigerian payment provider API; handled webhook-based payment confirmation rather than polling to ensure reliability
+- **Optimistic UI for ticket booking** — booking confirmations show immediately with background verification to reduce perceived latency on slower networks
+
+## Key Challenges & Solutions
+
+**Payment state management:** Payment flows have multiple intermediate states (initiated, pending, confirmed, failed) that need to survive app backgrounding and network drops. Implemented a persistent payment session store that resumes correctly on app reopen.
+
+**Event ticket validation:** Tickets needed to be verifiable offline. Implemented QR code generation client-side with a signed payload — scannable without network connectivity at the venue gate.
+
+## Outcomes & Impact
+
+- App live on both iOS and Android
+- Handles utility payments and event bookings in a single flow
+- QR ticket system works reliably in low/no connectivity environments`,
       type: "mobile",
       status: "live",
-      year: 2021,
-      stack: ["React Native", "Expo", "TypeScript", "Flutterwave", "VTPass API"],
+      year: 2024,
+      stack: ["React Native", "TypeScript"],
       featured: true,
       order: 3,
     },
@@ -77,12 +190,36 @@ async function main() {
       slug: "phr-tele-consulting",
       category: "side-project",
       description:
-        "Personal health records management and teleconsulting mobile app — patients manage records, book appointments, and consult doctors via video.",
-      content: `## Overview\n\nA mobile health platform that gives patients in Nigeria full control of their health records while enabling remote consultations with licensed physicians.\n\n## Key Features\n\n- Personal health record (PHR) storage and sharing\n- Doctor discovery and booking\n- Real-time video consultation via Agora SDK\n- Prescription and lab result management\n\n## Stack\n\nFlutter, Dart, Node.js backend, PostgreSQL, Agora for video.`,
+        "Personal health records and remote specialist consultation platform built with Flutter.",
+      content: `## The Problem
+
+Patients in Nigeria struggle with fragmented health records — results, prescriptions, and history spread across multiple hospitals with no portable record. Accessing specialists remotely was either unavailable or required expensive private clinic visits.
+
+## My Role
+
+Mobile engineer — built the Flutter application covering health record management, appointment booking, and tele-consultation flows.
+
+## Technical Decisions
+
+- **Flutter** — single codebase for iOS and Android with near-native performance; strong choice for a health app where UI consistency across platforms matters for user trust
+- **Local-first health records** — patient records cached locally with encrypted storage; readable without network, synced when online
+- **Video consultation** — integrated a third-party WebRTC SDK for video/audio calls within the app; text chat as a fallback
+
+## Key Challenges & Solutions
+
+**Sensitive data handling:** Health records required encryption at rest on device. Used Flutter Secure Storage for sensitive fields and structured the data model to distinguish between locally-only and synced records.
+
+**Consultation scheduling across time zones:** Doctors and patients aren't always in the same location. Handled all scheduling in UTC server-side, displayed in the device's local timezone client-side.
+
+## Outcomes & Impact
+
+- Patients can carry a portable, consolidated health record accessible offline
+- Remote consultations available without requiring in-person visits
+- Appointment booking system reduces no-shows via in-app reminders`,
       type: "mobile",
       status: "live",
-      year: 2022,
-      stack: ["Flutter", "Dart", "Node.js", "PostgreSQL", "Agora SDK"],
+      year: 2023,
+      stack: ["Flutter", "Dart"],
       featured: true,
       order: 4,
     },
@@ -90,13 +227,29 @@ async function main() {
       title: "Aria — Car Renting App",
       slug: "aria-car-renting",
       category: "side-project",
-      description:
-        "Mobile car rental marketplace — browse vehicles, check availability, book instantly, and manage rentals from your phone.",
-      content: `## Overview\n\nAria is a peer-to-peer car rental marketplace for Nigerian urban markets. Car owners list their vehicles; renters browse, book, and pay in-app.\n\n## Features\n\n- Vehicle listing with photos and availability calendar\n- Instant booking with in-app payment\n- Driver verification workflow\n- Rental tracking and handover confirmation\n\n## Stack\n\nFlutter, Dart, Node.js, PostgreSQL, Cloudinary, Paystack.`,
+      description: "On-demand car rental mobile application.",
+      content: `## The Problem
+
+Car rental in Nigeria is largely informal — finding available vehicles, confirming pricing, and completing the booking process is fragmented and unreliable. Aria brings the full rental experience into a structured mobile app.
+
+## My Role
+
+Mobile engineer — built the Flutter application covering browse, booking, and rental management flows.
+
+## Technical Decisions
+
+- **Flutter** — cross-platform from a single codebase with consistent UI across iOS and Android
+- **Map integration** — integrated a map SDK for browsing available vehicles by location and showing pickup points
+- **Booking state machine** — rental lifecycle (searched → reserved → active → returned) managed as explicit states to prevent invalid transitions
+
+## Outcomes & Impact
+
+- Full car rental flow available on iOS and Android
+- Map-based vehicle discovery reduces friction in finding available cars nearby`,
       type: "mobile",
       status: "live",
-      year: 2022,
-      stack: ["Flutter", "Dart", "Node.js", "PostgreSQL", "Paystack", "Cloudinary"],
+      year: 2024,
+      stack: ["Flutter", "Dart"],
       featured: false,
       order: 5,
     },
@@ -105,12 +258,30 @@ async function main() {
       slug: "exam-attendance-marker",
       category: "side-project",
       description:
-        "Mobile app for university exam halls — invigilators mark student attendance digitally, replacing paper registers with real-time sync.",
-      content: `## Overview\n\nBuilt for a Nigerian university to digitise exam hall attendance marking. Invigilators use the app to scan or search student IDs, mark attendance, and sync records to the server in real time.\n\n## Problem\n\nPaper registers were slow, error-prone, and hard to audit. Collation took days after exams.\n\n## Solution\n\nA Flutter app with offline support — attendance syncs when connectivity is available — and a web admin dashboard for coordinators.\n\n## Outcome\n\nAttendance collation reduced from days to minutes.`,
+        "Offline-capable mobile app for exam supervisors to mark and manage attendance.",
+      content: `## The Problem
+
+Exam supervisors at institutions were managing attendance with paper sheets — error-prone, slow to process, and impossible to query after the fact. The app needed to work in environments with poor or no internet connectivity.
+
+## My Role
+
+Built the Flutter application end-to-end — UI, offline data layer, and sync logic.
+
+## Technical Decisions
+
+- **Flutter** — fast UI rendering important for a supervisor marking hundreds of students quickly
+- **Offline-first with sync** — attendance records written locally first using SQLite; synced to the server when connectivity is available. Supervisors never lose data due to poor network.
+- **Conflict resolution** — if two supervisors mark the same student (edge case), server-side last-write-wins with a local audit log
+
+## Outcomes & Impact
+
+- Supervisors can mark full exam halls without network dependency
+- Attendance data available for querying and reporting immediately after sync
+- Eliminated paper-based attendance errors`,
       type: "mobile",
       status: "live",
-      year: 2020,
-      stack: ["Flutter", "Dart", "Node.js", "SQLite (offline)", "PostgreSQL", "REST API"],
+      year: 2023,
+      stack: ["Flutter", "Dart"],
       featured: false,
       order: 6,
     },
@@ -189,7 +360,7 @@ The wrong answer is starting with schema-per-tenant because it "feels safer" and
         "The real constraints of building software for African users — connectivity, device fragmentation, payment rails — and the engineering patterns that address them.",
       content: `# Building Reliable Software for African Markets
 
-After seven years building software that runs in Nigeria, Ghana, and Kenya, I've learned that the engineering challenges are real and specific. This isn't a generalisation — it's a set of concrete constraints that shape architectural decisions.
+After several years building software that runs in Nigeria and across West Africa, I've learned that the engineering challenges are real and specific. This isn't a generalisation — it's a set of concrete constraints that shape architectural decisions.
 
 ## The connectivity problem
 
@@ -206,7 +377,7 @@ The implication: **your app must handle partial failures gracefully**. This mean
 
 The median Android device in Nigeria is 2–3 generations behind the flagship. 2GB RAM is common. Storage is tight.
 
-React Native apps must be lean. No 50MB bundle. No unnecessary background processes. Hermes engine is non-negotiable. Code-split aggressively.
+Mobile apps must be lean. No bloated bundles. No unnecessary background processes. Code-split aggressively and test on low-end hardware.
 
 ## Payment rails
 
@@ -226,13 +397,70 @@ Build for the hardest case first.`,
       readingTime: "6 min read",
       published: true,
     },
+    {
+      title: "9 Million Backed-Up Jobs: Lessons from a Redis Queue Crisis",
+      slug: "redis-queue-crisis-lessons",
+      description:
+        "How a misconfigured queue worker turned into 9 million backed-up jobs in production — and how we drained it without downtime.",
+      content: `# 9 Million Backed-Up Jobs: Lessons from a Redis Queue Crisis
+
+At some point in a backend engineer's career, you open a monitoring dashboard and see a number that makes your stomach drop. For me, it was a Redis queue depth of 9 million jobs.
+
+This is what happened, why it happened, and what we changed so it couldn't happen again.
+
+## How It Started
+
+EonsFleet uses Laravel Horizon to manage background jobs — notifications, webhook dispatches, report generation, real-time telemetry processing. The queue system had been running fine for months.
+
+The problem started with a telemetry processing job that, under certain vehicle data conditions, would stall rather than fail. It didn't throw an exception. It didn't timeout cleanly. It just sat there, holding a worker slot.
+
+## How 9 Million Jobs Accumulated
+
+The telemetry queue processes vehicle location updates — every tracked vehicle sends a ping every 30 seconds. With workers stalling, queue throughput dropped. New jobs kept arriving at the normal rate. The backlog grew slowly at first, then faster as more workers got stuck.
+
+By the time monitoring caught the depth crossing a threshold alarm, the queue already had millions of backed-up jobs. The alarm threshold was set too high.
+
+## The Drain Problem
+
+You can't just delete 9 million queued jobs. Some of those jobs were legitimate and important — payment confirmations, critical notifications, SLA-sensitive webhooks. Nuking the queue would mean losing real work.
+
+We needed to stop the bleeding, triage the backlog, and drain safely.
+
+## What We Did
+
+**Step 1:** Scaled down the problematic workers first — stopped new workers from getting stuck and freed capacity for other queue types.
+
+**Step 2:** Split queues by priority. Jobs sharing a single queue were moved to named queues — \`critical\`, \`default\`, \`low\`, \`telemetry\`. Workers were assigned with explicit priority ordering.
+
+**Step 3:** Triaged the backlog. Telemetry location pings older than 5 minutes were stale by definition — we discarded the telemetry backlog entirely (safely — no business logic depended on historical pings being processed in-order).
+
+**Step 4:** Drained the remaining backlog by temporarily scaling Horizon workers up.
+
+**Step 5:** Fixed the root cause — lowered job timeout on the telemetry job to 15 seconds, added a mutex to prevent concurrent execution, added retry logic with exponential backoff.
+
+## What We Changed After
+
+- **Lower, specific timeouts** — every job class now has an explicit \`$timeout\` appropriate to what it actually does
+- **Named queues with priorities** — payments and critical notifications on the \`critical\` queue; telemetry isolated so it can't block payment processing
+- **Alerting at lower thresholds** — queue depth alarm now triggers at 10,000 jobs, not 1 million
+- **Job observability** — every job logs its start, completion, and duration
+
+## The Broader Lesson
+
+Queue systems fail silently in ways that other systems don't. A web server returning 500s is visible immediately. A queue backing up does so gradually, and by the time it's obviously broken, the damage is already done.
+
+Design your jobs so you know which ones can be safely dropped and which ones can't. That knowledge is the difference between a recoverable incident and a data loss event.`,
+      tags: ["Redis", "Queues", "Backend", "Incident"],
+      readingTime: "7 min read",
+      published: true,
+    },
   ]
 
-  for (const post of posts) {
+  for (const { slug, ...data } of posts) {
     await prisma.post.upsert({
-      where: { slug: post.slug },
-      update: {},
-      create: post,
+      where: { slug },
+      update: data,
+      create: { slug, ...data },
     })
   }
 
