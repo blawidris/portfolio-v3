@@ -5,6 +5,8 @@ import { buildMetadata } from "@/lib/metadata"
 import CaseStudyLayout from "@/components/projects/CaseStudyLayout"
 import type { Metadata } from "next"
 
+export const dynamic = "force-dynamic"
+
 interface Props {
   params: Promise<{ slug: string }>
 }

@@ -5,6 +5,8 @@ import AnimatedSection from "@/components/ui/AnimatedSection"
 import SectionHeader from "@/components/ui/SectionHeader"
 import ProjectTabs from "@/components/projects/ProjectTabs"
 
+export const dynamic = "force-dynamic"
+
 export const metadata = buildMetadata({
   title: "Projects",
   description:
