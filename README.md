@@ -1,36 +1,103 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Idris Lawal — Engineering Portfolio
 
-## Getting Started
+A full-stack personal engineering portfolio with public project case studies, technical writing, and a private content administrator. The application is one Next.js deployment backed by PostgreSQL.
 
-First, run the development server:
+## Technology
+
+- Next.js 16 App Router and React 19.
+- TypeScript in strict mode.
+- Tailwind CSS 4.
+- Prisma 5 and PostgreSQL (Neon in the documented production setup).
+- Auth.js 5 credentials authentication.
+- Vitest.
+
+## Runtime
+
+Use Node.js 22. The repository declares `>=22 <23` in `package.json`, includes `.nvmrc`, and uses Node 22 in CI.
+
+```bash
+nvm use
+node --version
+```
+
+## Local setup
+
+Install exactly the dependency versions in the lockfile:
+
+```bash
+npm ci
+```
+
+Copy `.env.example` to `.env` and provide development values. Use `.env`, not `.env.local` — the Prisma CLI (`db:validate`, `db:migrate`, `db:seed`) only auto-loads `.env`, while Next.js reads both, so `.env` is the one file every tool in this project picks up. Do not commit `.env` files or real secrets.
+
+| Variable | Scope | Purpose |
+|---|---|---|
+| `DATABASE_URL` | Server only, required | Pooled PostgreSQL runtime connection |
+| `DIRECT_URL` | Server only, required | Direct PostgreSQL migration connection |
+| `AUTH_SECRET` | Server only, required | Auth.js signing secret, at least 32 characters |
+| `NEXT_PUBLIC_SITE_URL` | Public, required | Canonical absolute site origin |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Seed-only | Read by `npm run db:seed` to bootstrap the first `Admin` row (bcrypt-hashed). Not read by the running app — rotate the password afterward via `/admin/settings`. |
+| `RESEND_API_KEY` / `RESEND_FROM_EMAIL` | Server only, optional | Sends the "forgot password" email. Without these, the app runs fine — the reset-password flow just can't deliver its email until they're set. |
+| `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_BUCKET_NAME` / `R2_PUBLIC_URL` | Server only, optional | Cloudflare R2 media storage for `/admin/media`. Without these, uploads return a clear "not configured" error instead of failing silently. |
+
+Generate an authentication secret with the Auth.js command documented in `.env.example`. Admin authentication is database-backed (`Admin` model, bcrypt-hashed passwords, login lockout after 5 failed attempts, self-service forgot/reset-password) — `npm run db:seed` creates the first admin from `ADMIN_EMAIL`/`ADMIN_PASSWORD`.
+
+Start development:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The public site is available at `http://localhost:3000`; administrator login is `/admin/login`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Database workflow
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Validate the Prisma schema:
 
-## Learn More
+```bash
+npm run db:validate
+```
 
-To learn more about Next.js, take a look at the following resources:
+Create and apply a development migration:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run db:migrate -- --name descriptive_change_name
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Apply committed migrations in production or to a new empty database:
 
-## Deploy on Vercel
+```bash
+npm run db:migrate:deploy
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Seed the existing portfolio content:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run db:seed
+```
+
+### Existing production database warning
+
+The committed baseline describes a schema that may already exist in production. Do not run migration deployment against an existing database until its schema has been backed up, introspected, compared, and the baseline has been marked as applied. Follow [the baseline procedure](docs/prisma-migration-baseline.md).
+
+## Verification
+
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run db:validate
+npm run build
+```
+
+Tests do not use production credentials. Route-handler integration tests mock persistence; CI also provisions an ephemeral PostgreSQL service and applies the full migration history to prove migrations work from an empty database.
+
+## Deployment assumptions
+
+The repository is designed for a Node-compatible Next.js host such as Vercel and a PostgreSQL provider such as Neon. Configure every required environment variable in the deployment environment. Run `npm run db:migrate:deploy` as an explicit release step only after the existing database baseline has been resolved.
+
+The application fails clearly when required environment variables are missing. CI uses isolated placeholder credentials and an ephemeral PostgreSQL database; it never connects to production.
+
+## Content safety
+
+Project and article slugs and seed content are production data. Do not rewrite or remove them during infrastructure changes. Markdown is converted to HTML through a strict sanitizer before being rendered publicly.

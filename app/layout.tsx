@@ -5,6 +5,10 @@ import Navbar from "@/components/layout/Navbar"
 import Footer from "@/components/layout/Footer"
 import "./globals.css"
 
+// Footer links are database-backed. Render requests at runtime while the
+// content query itself remains explicitly cached and tag-invalidated.
+export const dynamic = "force-dynamic"
+
 const instrumentSerif = Instrument_Serif({
   subsets: ["latin"],
   weight: ["400"],
@@ -34,7 +38,6 @@ export const metadata: Metadata = {
     title: "Idris Lawal — Senior Software Engineer",
     description:
       "Senior software engineer building scalable SaaS products and mobile applications for African markets.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
     siteName: "Idris Lawal",
   },
   twitter: {
@@ -49,8 +52,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${instrumentSerif.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}
     >
       <body style={{ fontFamily: "var(--font-body), system-ui, sans-serif" }}>
+        <a href="#main-content" className="skip-link">Skip to main content</a>
         <Navbar />
-        <main className="pt-16">{children}</main>
+        <main id="main-content" className="pt-16">{children}</main>
         <Footer />
         <Analytics />
       </body>

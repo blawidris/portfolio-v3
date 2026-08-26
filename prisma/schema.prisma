@@ -47,3 +47,130 @@ model FooterLink {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Admin {
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  name                String
+  passwordHash        String
+  isActive            Boolean   @default(true)
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  resetTokens         PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  adminId   String
+  admin     Admin     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([adminId])
+}
+
+model Media {
+  id              String   @id @default(cuid())
+  filename        String
+  mimeType        String
+  size            Int
+  storageKey      String   @unique
+  storageProvider String   @default("r2")
+  width           Int?
+  height          Int?
+  altText         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  certifications  Certification[]
+  resumes         Resume[]
+}
+
+model Profile {
+  id           String   @id @default("profile")
+  name         String
+  headline     String
+  tagline      String
+  bio          String   @db.Text
+  philosophy   String[] @default([])
+  location     String
+  availability String
+  updatedAt    DateTime @updatedAt
+}
+
+model Experience {
+  id           String   @id @default(cuid())
+  role         String
+  company      String
+  period       String
+  description  String   @db.Text
+  technologies String[] @default([])
+  isCurrent    Boolean  @default(false)
+  visible      Boolean  @default(true)
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model SkillCategory {
+  id      String  @id @default(cuid())
+  name    String
+  slug    String  @unique
+  order   Int     @default(0)
+  visible Boolean @default(true)
+  skills  Skill[]
+}
+
+model Skill {
+  id         String        @id @default(cuid())
+  name       String
+  categoryId String
+  category   SkillCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  icon       String?
+  featured   Boolean       @default(false)
+  visible    Boolean       @default(true)
+  order      Int           @default(0)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@index([categoryId])
+}
+
+model Certification {
+  id            String    @id @default(cuid())
+  name          String
+  issuer        String
+  issueDate     DateTime
+  credentialUrl String?
+  badgeMediaId  String?
+  badgeMedia    Media?    @relation(fields: [badgeMediaId], references: [id], onDelete: SetNull)
+  visible       Boolean   @default(true)
+  order         Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Resume {
+  id             String   @id @default(cuid())
+  mediaId        String
+  media          Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  publicFilename String
+  isActive       Boolean  @default(false)
+  publicDownload Boolean  @default(true)
+  createdAt      DateTime @default(now())
+}
+
+model NavigationItem {
+  id        String   @id @default(cuid())
+  label     String
+  href      String
+  order     Int      @default(0)
+  visible   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

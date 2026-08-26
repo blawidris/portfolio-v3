@@ -1,5 +1,9 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
+import { verifyAdminCredentials } from "@/lib/auth/credentials"
+import { getServerEnvironment } from "@/lib/env"
+
+const environment = getServerEnvironment()
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -8,14 +12,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      authorize(credentials) {
-        if (
-          credentials.email === process.env.ADMIN_EMAIL &&
-          credentials.password === process.env.ADMIN_PASSWORD
-        ) {
-          return { id: "admin", name: "Idris Lawal", email: credentials.email as string }
-        }
-        return null
+      async authorize(credentials) {
+        const admin = await verifyAdminCredentials(credentials.email, credentials.password)
+        if (!admin) return null
+        return { id: admin.id, name: admin.name, email: admin.email }
       },
     }),
   ],
@@ -23,4 +23,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/admin/login",
   },
   session: { strategy: "jwt" },
+  secret: environment.AUTH_SECRET,
 })

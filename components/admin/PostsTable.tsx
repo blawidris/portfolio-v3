@@ -55,12 +55,14 @@ export default function PostsTable({ posts }: { posts: Post[] }) {
                   <div className="flex items-center gap-3 justify-end">
                     <Link
                       href={`/admin/posts/${post.id}/edit`}
+                      aria-label={`Edit ${post.title}`}
                       className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                     >
                       <Pencil size={14} />
                     </Link>
                     <button
                       onClick={() => setDeleteId(post.id)}
+                      aria-label={`Delete ${post.title}`}
                       className="text-[var(--text-muted)] hover:text-red-400 transition-colors"
                     >
                       <Trash2 size={14} />

@@ -1,8 +1,31 @@
 import { PrismaClient } from "@prisma/client"
+import bcrypt from "bcryptjs"
 
 const prisma = new PrismaClient()
 
 async function main() {
+  // Bootstrap admin account. Reads ADMIN_EMAIL/ADMIN_PASSWORD directly
+  // (not through lib/env.ts's getServerEnvironment(), which no longer
+  // requires them at runtime) — these are seed-only credentials now that
+  // login is database-backed.
+  const bootstrapEmail = process.env.ADMIN_EMAIL
+  const bootstrapPassword = process.env.ADMIN_PASSWORD
+  if (!bootstrapEmail || !bootstrapPassword) {
+    throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD must be set to seed the bootstrap admin account.")
+  }
+
+  // update: {} — never overwrite passwordHash on reseed, otherwise rotating
+  // the password via the admin UI would silently revert on the next seed run.
+  await prisma.admin.upsert({
+    where: { email: bootstrapEmail.trim().toLowerCase() },
+    update: {},
+    create: {
+      email: bootstrapEmail.trim().toLowerCase(),
+      name: "Idris Lawal",
+      passwordHash: await bcrypt.hash(bootstrapPassword, 12),
+    },
+  })
+
   // Footer links
   await prisma.footerLink.createMany({
     data: [
@@ -13,6 +36,113 @@ async function main() {
     ],
     skipDuplicates: true,
   })
+
+  // Profile — singleton. update: {} so re-running seed never reverts edits
+  // made later through the admin Settings page.
+  await prisma.profile.upsert({
+    where: { id: "profile" },
+    update: {},
+    create: {
+      id: "profile",
+      name: "Idris Lawal",
+      headline: "I build the backend that makes SaaS scale.",
+      tagline: "Senior software engineer specialising in distributed systems, multi-tenant SaaS, and cross-platform mobile apps — Lagos, Nigeria.",
+      bio: [
+        "I'm Idris Lawal — a senior software engineer based in Lagos, Nigeria. I specialise in building scalable SaaS backends, multi-tenant systems, and cross-platform mobile applications.",
+        "My work spans fintech, logistics, edtech, and health-tech — always with a focus on reliability, performance, and the real constraints of building for African markets: variable connectivity, diverse devices, cost-conscious infrastructure.",
+        "I believe great software is built through clear thinking, strong opinions loosely held, and an obsession with correctness. I care deeply about the craft.",
+      ].join("\n\n"),
+      philosophy: [
+        "Correctness before performance — a fast wrong answer is worse than a slow right one.",
+        "Design for the failure case first — distributed systems fail in interesting ways.",
+        "Ship incrementally — large PRs are a risk surface, not a sign of effort.",
+        "Measure before optimising — premature optimisation is still the root of most evil.",
+        "Build for maintainability — future you will thank present you.",
+      ],
+      location: "Lagos, Nigeria",
+      availability: "Available for work",
+    },
+  })
+
+  // Experience — no natural unique key, so seed only creates entries that
+  // don't already exist by (company, role); never overwrites admin edits.
+  const experienceEntries = [
+    {
+      role: "Senior Software Engineer",
+      company: "EonsFleet Mobility Solutions",
+      period: "2022 – Present",
+      description: "Architected a multi-tenant fleet management SaaS — real-time vehicle tracking, driver management, billing engine, and reporting dashboard. Serves logistics companies across West Africa.",
+      isCurrent: true,
+      order: 0,
+    },
+    {
+      role: "Full-Stack Engineer",
+      company: "TTS Nigeria / 3MTT Platform",
+      period: "2023 – Present",
+      description: "Building the technical training management platform for Nigeria's 3 Million Technical Talent programme. Multi-role auth, cohort management, progress tracking, and certificate issuance.",
+      isCurrent: true,
+      order: 1,
+    },
+    {
+      role: "Backend Engineer",
+      company: "Davton LMS",
+      period: "2021 – 2022",
+      description: "Designed and built the API for a learning management system — course delivery, assessment engine, multi-instructor support, and Paystack payments integration.",
+      isCurrent: false,
+      order: 2,
+    },
+    {
+      role: "Mobile Engineer",
+      company: "Paybills / PHR & Tele-consulting",
+      period: "2020 – 2022",
+      description: "Built cross-platform mobile applications using React Native — bill payments, health records management, and teleconsulting features with real-time video.",
+      isCurrent: false,
+      order: 3,
+    },
+  ]
+
+  for (const entry of experienceEntries) {
+    const existing = await prisma.experience.findFirst({ where: { company: entry.company, role: entry.role } })
+    if (!existing) await prisma.experience.create({ data: entry })
+  }
+
+  // Skills — grouped using the site's own existing Uses-page taxonomy.
+  // This is a starting point, editable anytime via /admin/skills.
+  const skillCategories = [
+    { name: "Languages & Runtimes", slug: "languages-runtimes", order: 0, skills: ["TypeScript", "Node.js"] },
+    { name: "Frontend", slug: "frontend", order: 1, skills: ["Next.js", "Tailwind CSS", "Framer Motion"] },
+    { name: "Mobile", slug: "mobile", order: 2, skills: ["React Native"] },
+    { name: "Backend & Database", slug: "backend-database", order: 3, skills: ["PostgreSQL", "Prisma", "Redis", "Neon"] },
+    { name: "Infrastructure", slug: "infrastructure", order: 4, skills: ["Docker", "AWS", "Vercel"] },
+  ]
+
+  for (const category of skillCategories) {
+    const categoryRow = await prisma.skillCategory.upsert({
+      where: { slug: category.slug },
+      update: {},
+      create: { name: category.name, slug: category.slug, order: category.order },
+    })
+
+    for (const [index, skillName] of category.skills.entries()) {
+      const existing = await prisma.skill.findFirst({ where: { categoryId: categoryRow.id, name: skillName } })
+      if (!existing) {
+        await prisma.skill.create({ data: { name: skillName, categoryId: categoryRow.id, order: index } })
+      }
+    }
+  }
+
+  // Navigation — the current hardcoded Navbar links.
+  const navigationItems = [
+    { label: "Work", href: "/projects", order: 0 },
+    { label: "Writing", href: "/writing", order: 1 },
+    { label: "About", href: "/about", order: 2 },
+    { label: "Uses", href: "/uses", order: 3 },
+  ]
+
+  for (const item of navigationItems) {
+    const existing = await prisma.navigationItem.findFirst({ where: { href: item.href } })
+    if (!existing) await prisma.navigationItem.create({ data: item })
+  }
 
   // Projects
   const projects = [

@@ -1,11 +1,9 @@
 import { Suspense } from "react"
-import { prisma } from "@/lib/prisma"
+import { getPublicProjects } from "@/lib/content/projects/queries"
 import { buildMetadata } from "@/lib/metadata"
 import AnimatedSection from "@/components/ui/AnimatedSection"
 import SectionHeader from "@/components/ui/SectionHeader"
 import ProjectTabs from "@/components/projects/ProjectTabs"
-
-export const dynamic = "force-dynamic"
 
 export const metadata = buildMetadata({
   title: "Projects",
@@ -15,12 +13,7 @@ export const metadata = buildMetadata({
 })
 
 export default async function ProjectsPage() {
-  let projects: Awaited<ReturnType<typeof prisma.project.findMany>> = []
-  try {
-    projects = await prisma.project.findMany({ orderBy: { order: "asc" } })
-  } catch {
-    // DB not connected
-  }
+  const projects = await getPublicProjects()
 
   return (
     <div className="max-w-[1100px] mx-auto px-6 py-16">

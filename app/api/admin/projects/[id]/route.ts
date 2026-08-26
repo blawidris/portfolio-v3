@@ -1,13 +1,15 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
-import { revalidateTag } from "next/cache"
+import { handleApiError, parseJsonRequest, unauthorizedResponse } from "@/lib/errors/api"
+import { projectUpdateSchema } from "@/lib/validation/projects"
+import { revalidateProjectContent } from "@/lib/content/cache"
 
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth()
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 })
+  if (!session) return unauthorizedResponse()
 
   const { id } = await params
   const project = await prisma.project.findUnique({ where: { id } })
@@ -20,13 +22,20 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth()
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 })
+  if (!session) return unauthorizedResponse()
 
-  const { id } = await params
-  const body = await req.json()
-  const project = await prisma.project.update({ where: { id }, data: body })
-  revalidateTag("projects", "default")
-  return Response.json(project)
+  try {
+    const { id } = await params
+    const input = projectUpdateSchema.parse(await parseJsonRequest(req))
+    const existing = await prisma.project.findUnique({ where: { id }, select: { slug: true } })
+    if (!existing) return Response.json({ error: { code: "NOT_FOUND", message: "The requested project was not found." } }, { status: 404 })
+
+    const project = await prisma.project.update({ where: { id }, data: input })
+    revalidateProjectContent(existing.slug, project.slug)
+    return Response.json(project)
+  } catch (error) {
+    return handleApiError(error, "projects.update")
+  }
 }
 
 export async function DELETE(
@@ -34,10 +43,16 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth()
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 })
+  if (!session) return unauthorizedResponse()
 
-  const { id } = await params
-  await prisma.project.delete({ where: { id } })
-  revalidateTag("projects", "default")
-  return new Response(null, { status: 204 })
+  try {
+    const { id } = await params
+    const existing = await prisma.project.findUnique({ where: { id }, select: { slug: true } })
+    if (!existing) return Response.json({ error: { code: "NOT_FOUND", message: "The requested project was not found." } }, { status: 404 })
+    await prisma.project.delete({ where: { id } })
+    revalidateProjectContent(existing.slug)
+    return new Response(null, { status: 204 })
+  } catch (error) {
+    return handleApiError(error, "projects.delete")
+  }
 }

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma"
+import { getPublishedPosts } from "@/lib/content/articles/queries"
 import { buildMetadata } from "@/lib/metadata"
 import AnimatedSection from "@/components/ui/AnimatedSection"
 import SectionHeader from "@/components/ui/SectionHeader"
@@ -12,15 +12,7 @@ export const metadata = buildMetadata({
 })
 
 export default async function WritingPage() {
-  let posts: Awaited<ReturnType<typeof prisma.post.findMany>> = []
-  try {
-    posts = await prisma.post.findMany({
-      where: { published: true },
-      orderBy: { createdAt: "desc" },
-    })
-  } catch {
-    // DB not connected
-  }
+  const posts = await getPublishedPosts()
 
   return (
     <div className="max-w-[1100px] mx-auto px-6 py-16">

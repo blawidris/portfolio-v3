@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Trash2 } from "lucide-react"
 import ConfirmModal from "@/components/admin/ConfirmModal"
 import type { FooterLink } from "@prisma/client"
+import { readApiError } from "@/lib/client/api-error"
 
 interface FooterLinkFormProps {
   links: FooterLink[]
@@ -14,20 +15,29 @@ export default function FooterLinkForm({ links: initialLinks }: FooterLinkFormPr
   const [form, setForm] = useState({ label: "", url: "", icon: "", order: 0 })
   const [adding, setAdding] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [error, setError] = useState("")
 
   async function addLink() {
     setAdding(true)
-    const res = await fetch("/api/admin/footer-links", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, order: links.length }),
-    })
-    if (res.ok) {
+    setError("")
+    try {
+      const res = await fetch("/api/admin/footer-links", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, order: links.length }),
+      })
+      if (!res.ok) {
+        setError(await readApiError(res))
+        return
+      }
       const newLink = await res.json()
       setLinks((prev) => [...prev, newLink])
       setForm({ label: "", url: "", icon: "", order: 0 })
+    } catch {
+      setError("The link could not be saved. Check your connection and try again.")
+    } finally {
+      setAdding(false)
     }
-    setAdding(false)
   }
 
   async function deleteLink(id: string) {
@@ -98,6 +108,7 @@ export default function FooterLinkForm({ links: initialLinks }: FooterLinkFormPr
         >
           {adding ? "Adding…" : "Add"}
         </button>
+        {error && <p role="alert" className="mt-3 text-sm text-red-400">{error}</p>}
       </div>
 
       <ConfirmModal

@@ -1,4 +1,5 @@
-import { prisma } from "@/lib/prisma"
+import { getFooterLinks } from "@/lib/content/footer-links/queries"
+import { getProfile } from "@/lib/content/profile/queries"
 import * as Icons from "lucide-react"
 import Link from "next/link"
 
@@ -11,18 +12,13 @@ function DynamicIcon({ name }: { name: string }) {
 }
 
 export default async function Footer() {
-  let links: { id: string; label: string; url: string; icon: string }[] = []
-  try {
-    links = await prisma.footerLink.findMany({ orderBy: { order: "asc" } })
-  } catch {
-    // DB not connected yet — render without links
-  }
+  const [links, profile] = await Promise.all([getFooterLinks(), getProfile()])
 
   return (
     <footer className="border-t border-[var(--border)] mt-24">
       <div className="max-w-[1100px] mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
         <p className="text-sm text-[var(--text-muted)]">
-          © {new Date().getFullYear()} Idris Lawal
+          © {new Date().getFullYear()} {profile?.name ?? "Idris Lawal"}
         </p>
         {links.length > 0 && (
           <div className="flex items-center gap-4">

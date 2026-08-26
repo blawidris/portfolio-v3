@@ -1,17 +1,15 @@
-import { prisma } from "@/lib/prisma"
+import { getPublishedPostSitemapEntries } from "@/lib/content/articles/queries"
+import { getPublicProjectSitemapEntries } from "@/lib/content/projects/queries"
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://idrislawal.dev"
 
-export default async function sitemap() {
-  let posts: { slug: string }[] = []
-  let projects: { slug: string }[] = []
+export const dynamic = "force-dynamic"
 
-  try {
-    posts = await prisma.post.findMany({ where: { published: true }, select: { slug: true } })
-    projects = await prisma.project.findMany({ select: { slug: true } })
-  } catch {
-    // DB not available at build time
-  }
+export default async function sitemap() {
+  const [posts, projects] = await Promise.all([
+    getPublishedPostSitemapEntries(),
+    getPublicProjectSitemapEntries(),
+  ])
 
   return [
     { url: siteUrl, lastModified: new Date() },
@@ -20,7 +18,7 @@ export default async function sitemap() {
     { url: `${siteUrl}/writing`, lastModified: new Date() },
     { url: `${siteUrl}/uses`, lastModified: new Date() },
     { url: `${siteUrl}/contact`, lastModified: new Date() },
-    ...posts.map((p) => ({ url: `${siteUrl}/writing/${p.slug}`, lastModified: new Date() })),
-    ...projects.map((p) => ({ url: `${siteUrl}/projects/${p.slug}`, lastModified: new Date() })),
+    ...posts.map((p) => ({ url: `${siteUrl}/writing/${p.slug}`, lastModified: p.updatedAt })),
+    ...projects.map((p) => ({ url: `${siteUrl}/projects/${p.slug}`, lastModified: p.updatedAt })),
   ]
 }

@@ -1,21 +1,12 @@
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
-import { prisma } from "@/lib/prisma"
+import { getPublishedPosts } from "@/lib/content/articles/queries"
 import AnimatedSection from "@/components/ui/AnimatedSection"
 import SectionHeader from "@/components/ui/SectionHeader"
 import PostCard from "@/components/writing/PostCard"
 
 export default async function WritingPreview() {
-  let posts: Awaited<ReturnType<typeof prisma.post.findMany>> = []
-  try {
-    posts = await prisma.post.findMany({
-      where: { published: true },
-      orderBy: { createdAt: "desc" },
-      take: 2,
-    })
-  } catch {
-    // DB not connected
-  }
+  const posts = await getPublishedPosts({ take: 2 })
 
   return (
     <section className="max-w-[1100px] mx-auto px-6 py-20 border-t border-[var(--border)]">

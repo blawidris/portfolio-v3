@@ -1,17 +1,25 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
+import { handleApiError, parseJsonRequest, unauthorizedResponse } from "@/lib/errors/api"
+import { footerLinkUpdateSchema } from "@/lib/validation/footer-links"
+import { revalidateFooterLinks } from "@/lib/content/cache"
 
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth()
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 })
+  if (!session) return unauthorizedResponse()
 
-  const { id } = await params
-  const body = await req.json()
-  const link = await prisma.footerLink.update({ where: { id }, data: body })
-  return Response.json(link)
+  try {
+    const { id } = await params
+    const input = footerLinkUpdateSchema.parse(await parseJsonRequest(req))
+    const link = await prisma.footerLink.update({ where: { id }, data: input })
+    revalidateFooterLinks()
+    return Response.json(link)
+  } catch (error) {
+    return handleApiError(error, "footer-links.update")
+  }
 }
 
 export async function DELETE(
@@ -19,9 +27,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth()
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 })
+  if (!session) return unauthorizedResponse()
 
-  const { id } = await params
-  await prisma.footerLink.delete({ where: { id } })
-  return new Response(null, { status: 204 })
+  try {
+    const { id } = await params
+    await prisma.footerLink.delete({ where: { id } })
+    revalidateFooterLinks()
+    return new Response(null, { status: 204 })
+  } catch (error) {
+    return handleApiError(error, "footer-links.delete")
+  }
 }

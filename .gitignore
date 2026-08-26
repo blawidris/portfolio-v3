@@ -42,3 +42,5 @@ yarn-error.log*
 next-env.d.ts
 
 *.md
+!docs/portfolio-audit-report.md
+!docs/prisma-migration-baseline.md

@@ -1,10 +1,12 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
-import { revalidateTag } from "next/cache"
+import { handleApiError, parseJsonRequest, unauthorizedResponse } from "@/lib/errors/api"
+import { projectInputSchema } from "@/lib/validation/projects"
+import { revalidateProjectContent } from "@/lib/content/cache"
 
 export async function GET() {
   const session = await auth()
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 })
+  if (!session) return unauthorizedResponse()
 
   const projects = await prisma.project.findMany({ orderBy: { order: "asc" } })
   return Response.json(projects)
@@ -12,10 +14,28 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await auth()
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 })
+  if (!session) return unauthorizedResponse()
 
-  const body = await req.json()
-  const project = await prisma.project.create({ data: body })
-  revalidateTag("projects", "default")
-  return Response.json(project, { status: 201 })
+  try {
+    const input = projectInputSchema.parse(await parseJsonRequest(req))
+    const project = await prisma.project.create({
+      data: {
+        title: input.title,
+        slug: input.slug,
+        description: input.description,
+        content: input.content,
+        type: input.type,
+        category: input.category,
+        status: input.status,
+        year: input.year,
+        stack: input.stack,
+        featured: input.featured,
+        order: input.order,
+      },
+    })
+    revalidateProjectContent(project.slug)
+    return Response.json(project, { status: 201 })
+  } catch (error) {
+    return handleApiError(error, "projects.create")
+  }
 }

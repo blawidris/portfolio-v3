@@ -3,12 +3,16 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
-import { LayoutDashboard, FileText, FolderOpen, Settings, LogOut } from "lucide-react"
+import { LayoutDashboard, FileText, FolderOpen, Image as ImageIcon, Briefcase, Sparkles, Award, Settings, LogOut } from "lucide-react"
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/posts", label: "Posts", icon: FileText, exact: false },
   { href: "/admin/projects", label: "Projects", icon: FolderOpen, exact: false },
+  { href: "/admin/experience", label: "Experience", icon: Briefcase, exact: false },
+  { href: "/admin/skills", label: "Skills", icon: Sparkles, exact: false },
+  { href: "/admin/certifications", label: "Certifications", icon: Award, exact: false },
+  { href: "/admin/media", label: "Media", icon: ImageIcon, exact: false },
   { href: "/admin/settings", label: "Settings", icon: Settings, exact: false },
 ]
 

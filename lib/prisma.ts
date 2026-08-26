@@ -1,4 +1,7 @@
 import { PrismaClient } from "@prisma/client"
+import { getServerEnvironment } from "@/lib/env"
+
+getServerEnvironment()
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined

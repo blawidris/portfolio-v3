@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation"
-import { prisma } from "@/lib/prisma"
+import { getPublishedPostBySlug } from "@/lib/content/articles/queries"
 import { parseMarkdown } from "@/lib/markdown"
 import { buildMetadata } from "@/lib/metadata"
 import Tag from "@/components/ui/Tag"
@@ -11,14 +11,14 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const post = await prisma.post.findUnique({ where: { slug, published: true } })
+  const post = await getPublishedPostBySlug(slug)
   if (!post) return {}
   return buildMetadata({ title: post.title, description: post.description, path: `/writing/${slug}` })
 }
 
 export default async function PostDetailPage({ params }: Props) {
   const { slug } = await params
-  const post = await prisma.post.findUnique({ where: { slug, published: true } })
+  const post = await getPublishedPostBySlug(slug)
   if (!post) notFound()
 
   const contentHtml = parseMarkdown(post.content)

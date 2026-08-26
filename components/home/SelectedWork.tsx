@@ -1,21 +1,12 @@
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
-import { prisma } from "@/lib/prisma"
+import { getPublicProjects } from "@/lib/content/projects/queries"
 import AnimatedSection from "@/components/ui/AnimatedSection"
 import SectionHeader from "@/components/ui/SectionHeader"
 import ProjectCard from "@/components/projects/ProjectCard"
 
 export default async function SelectedWork() {
-  let projects: Awaited<ReturnType<typeof prisma.project.findMany>> = []
-  try {
-    projects = await prisma.project.findMany({
-      where: { featured: true },
-      orderBy: { order: "asc" },
-      take: 4,
-    })
-  } catch {
-    // DB not connected
-  }
+  const projects = await getPublicProjects({ featured: true, take: 4 })
 
   return (
     <section className="max-w-[1100px] mx-auto px-6 py-20 border-t border-[var(--border)]">

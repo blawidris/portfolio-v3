@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { slugify } from "@/lib/slugify"
 import ConfirmModal from "@/components/admin/ConfirmModal"
+import { readApiError } from "@/lib/client/api-error"
 
 interface ProjectFormData {
   title: string
@@ -52,6 +53,7 @@ export default function ProjectForm({ id, initialData }: ProjectFormProps) {
   })
   const [saving, setSaving] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
+  const [error, setError] = useState("")
 
   function handleTitleChange(title: string) {
     setForm((prev) => ({
@@ -63,6 +65,7 @@ export default function ProjectForm({ id, initialData }: ProjectFormProps) {
 
   async function save() {
     setSaving(true)
+    setError("")
     const payload = {
       title: form.title,
       slug: form.slug,
@@ -79,16 +82,24 @@ export default function ProjectForm({ id, initialData }: ProjectFormProps) {
     const url = id ? `/api/admin/projects/${id}` : "/api/admin/projects"
     const method = id ? "PATCH" : "POST"
 
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    })
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
 
-    setSaving(false)
-    if (res.ok) {
+      if (!res.ok) {
+        setError(await readApiError(res))
+        return
+      }
+
       router.push("/admin/projects")
       router.refresh()
+    } catch {
+      setError("The project could not be saved. Check your connection and try again.")
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -202,6 +213,7 @@ export default function ProjectForm({ id, initialData }: ProjectFormProps) {
           <button
             role="switch"
             aria-checked={form.featured}
+            aria-label="Featured on homepage"
             onClick={() => setForm((p) => ({ ...p, featured: !p.featured }))}
             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
               form.featured ? "bg-[var(--accent)]" : "bg-[var(--border)]"
@@ -245,6 +257,8 @@ export default function ProjectForm({ id, initialData }: ProjectFormProps) {
           </button>
         )}
       </div>
+
+      {error && <p role="alert" className="mt-4 text-sm text-red-400">{error}</p>}
 
       <ConfirmModal
         isOpen={showDelete}

@@ -61,12 +61,14 @@ export default function ProjectsTable({ projects }: { projects: Project[] }) {
                   <div className="flex items-center gap-3 justify-end">
                     <Link
                       href={`/admin/projects/${project.id}/edit`}
+                      aria-label={`Edit ${project.title}`}
                       className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                     >
                       <Pencil size={14} />
                     </Link>
                     <button
                       onClick={() => setDeleteId(project.id)}
+                      aria-label={`Delete ${project.title}`}
                       className="text-[var(--text-muted)] hover:text-red-400 transition-colors"
                     >
                       <Trash2 size={14} />
