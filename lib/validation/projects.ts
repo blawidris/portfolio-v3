@@ -12,13 +12,15 @@ const projectShape = {
   slug: slugSchema,
   description: trimmedText("Description", 1000),
   content: z.string().trim().max(100_000, "Content is too long."),
-  type: trimmedText("Type", 50),
+  type: z.enum(["web", "mobile"], { message: "Type must be web or mobile." }),
   category: z.enum(["work", "side-project"], { message: "Category must be work or side-project." }),
-  status: trimmedText("Status", 50),
+  status: z.enum(["live", "in-progress", "archived"], { message: "Status must be live, in-progress, or archived." }),
   year: z.coerce.number().int().min(1900).max(currentYear + 5),
   stack: z.array(trimmedText("Technology", 80)).max(50).transform((items) => [...new Set(items)]),
   featured: z.boolean(),
   order: z.coerce.number().int().min(0).max(100_000),
+  published: z.boolean(),
+  coverMediaId: z.string().trim().min(1).optional(),
 }
 
 export const projectInputSchema = z.object({

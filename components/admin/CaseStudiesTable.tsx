@@ -3,27 +3,27 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Pencil, Trash2, Star } from "lucide-react"
+import { Pencil, Trash2 } from "lucide-react"
 import Badge from "@/components/ui/Badge"
 import ConfirmModal from "@/components/admin/ConfirmModal"
-import type { Project } from "@prisma/client"
+import type { CaseStudy } from "@prisma/client"
 
-export default function ProjectsTable({ projects }: { projects: Project[] }) {
+export default function CaseStudiesTable({ caseStudies }: { caseStudies: CaseStudy[] }) {
   const router = useRouter()
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
   async function handleDelete(id: string) {
-    await fetch(`/api/admin/projects/${id}`, { method: "DELETE" })
+    await fetch(`/api/admin/case-studies/${id}`, { method: "DELETE" })
     setDeleteId(null)
     router.refresh()
   }
 
-  if (projects.length === 0) {
+  if (caseStudies.length === 0) {
     return (
       <div className="text-center py-16 text-[var(--text-muted)] text-sm bg-[var(--bg-card)] border border-[var(--border)] rounded-lg">
-        No projects yet.{" "}
-        <Link href="/admin/projects/new" className="text-[var(--accent)] hover:underline">
-          Create your first project →
+        No case studies yet.{" "}
+        <Link href="/admin/case-studies/new" className="text-[var(--accent)] hover:underline">
+          Create your first case study →
         </Link>
       </div>
     )
@@ -36,43 +36,31 @@ export default function ProjectsTable({ projects }: { projects: Project[] }) {
           <thead>
             <tr className="border-b border-[var(--border)]">
               <th className="text-left px-5 py-3 text-xs text-[var(--text-muted)] font-medium">Title</th>
-              <th className="text-left px-5 py-3 text-xs text-[var(--text-muted)] font-medium hidden md:table-cell">Type</th>
               <th className="text-left px-5 py-3 text-xs text-[var(--text-muted)] font-medium">Status</th>
-              <th className="text-left px-5 py-3 text-xs text-[var(--text-muted)] font-medium">Published</th>
-              <th className="text-left px-5 py-3 text-xs text-[var(--text-muted)] font-medium hidden lg:table-cell">Featured</th>
               <th className="text-left px-5 py-3 text-xs text-[var(--text-muted)] font-medium hidden lg:table-cell">Order</th>
               <th className="px-5 py-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border)]">
-            {projects.map((project) => (
-              <tr key={project.id} className="hover:bg-[var(--bg-secondary)] transition-colors">
-                <td className="px-5 py-3.5 text-[var(--text-primary)]">{project.title}</td>
-                <td className="px-5 py-3.5 hidden md:table-cell">
-                  <Badge variant={project.type as "web" | "mobile"} />
-                </td>
+            {caseStudies.map((caseStudy) => (
+              <tr key={caseStudy.id} className="hover:bg-[var(--bg-secondary)] transition-colors">
+                <td className="px-5 py-3.5 text-[var(--text-primary)]">{caseStudy.title}</td>
                 <td className="px-5 py-3.5">
-                  <Badge variant={project.status as "live" | "in-progress" | "archived"} />
+                  <Badge variant={caseStudy.published ? "published" : "draft"} />
                 </td>
-                <td className="px-5 py-3.5">
-                  <Badge variant={project.published ? "published" : "draft"} />
-                </td>
-                <td className="px-5 py-3.5 hidden lg:table-cell">
-                  {project.featured && <Star size={14} className="text-[var(--accent)]" />}
-                </td>
-                <td className="px-5 py-3.5 text-[var(--text-muted)] hidden lg:table-cell">{project.order}</td>
+                <td className="px-5 py-3.5 text-[var(--text-muted)] hidden lg:table-cell">{caseStudy.order}</td>
                 <td className="px-5 py-3.5">
                   <div className="flex items-center gap-3 justify-end">
                     <Link
-                      href={`/admin/projects/${project.id}/edit`}
-                      aria-label={`Edit ${project.title}`}
+                      href={`/admin/case-studies/${caseStudy.id}/edit`}
+                      aria-label={`Edit ${caseStudy.title}`}
                       className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                     >
                       <Pencil size={14} />
                     </Link>
                     <button
-                      onClick={() => setDeleteId(project.id)}
-                      aria-label={`Delete ${project.title}`}
+                      onClick={() => setDeleteId(caseStudy.id)}
+                      aria-label={`Delete ${caseStudy.title}`}
                       className="text-[var(--text-muted)] hover:text-red-400 transition-colors"
                     >
                       <Trash2 size={14} />
@@ -87,7 +75,7 @@ export default function ProjectsTable({ projects }: { projects: Project[] }) {
 
       <ConfirmModal
         isOpen={!!deleteId}
-        label="this project"
+        label="this case study"
         onConfirm={() => deleteId && handleDelete(deleteId)}
         onCancel={() => setDeleteId(null)}
       />

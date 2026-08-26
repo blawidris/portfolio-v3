@@ -1,12 +1,24 @@
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { getPublicProjects } from "@/lib/content/projects/queries"
+import { getMediaUrl, StorageNotConfiguredError } from "@/lib/storage/r2"
 import AnimatedSection from "@/components/ui/AnimatedSection"
 import SectionHeader from "@/components/ui/SectionHeader"
 import ProjectCard from "@/components/projects/ProjectCard"
 
 export default async function SelectedWork() {
-  const projects = await getPublicProjects({ featured: true, take: 4 })
+  const rawProjects = await getPublicProjects({ featured: true, take: 4 })
+  const projects = rawProjects.map((project) => {
+    let coverUrl: string | null = null
+    if (project.coverMedia) {
+      try {
+        coverUrl = getMediaUrl(project.coverMedia.storageKey)
+      } catch (error) {
+        if (!(error instanceof StorageNotConfiguredError)) throw error
+      }
+    }
+    return { ...project, coverUrl }
+  })
 
   return (
     <section className="max-w-[1100px] mx-auto px-6 py-20 border-t border-[var(--border)]">

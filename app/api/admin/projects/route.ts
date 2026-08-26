@@ -31,6 +31,8 @@ export async function POST(req: Request) {
         stack: input.stack,
         featured: input.featured,
         order: input.order,
+        published: input.published,
+        coverMediaId: input.coverMediaId,
       },
     })
     revalidateProjectContent(project.slug)

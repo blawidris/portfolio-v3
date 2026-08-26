@@ -12,6 +12,8 @@ export const contentTags = {
   certifications: "certifications",
   resume: "resume",
   navigation: "navigation",
+  caseStudies: "case-studies",
+  caseStudy: (slug: string) => `case-study:${slug}`,
 } as const
 
 export function revalidateProjectContent(...slugs: Array<string | undefined>) {
@@ -54,4 +56,11 @@ export function revalidateResume() {
 
 export function revalidateNavigation() {
   revalidateTag(contentTags.navigation, "max")
+}
+
+export function revalidateCaseStudyContent(...slugs: Array<string | undefined>) {
+  revalidateTag(contentTags.caseStudies, "max")
+  for (const slug of slugs) {
+    if (slug) revalidateTag(contentTags.caseStudy(slug), "max")
+  }
 }

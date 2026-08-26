@@ -11,7 +11,7 @@ const TABS = [
 ]
 
 interface ProjectTabsProps {
-  projects: Project[]
+  projects: (Project & { coverUrl: string | null })[]
 }
 
 export default function ProjectTabs({ projects }: ProjectTabsProps) {

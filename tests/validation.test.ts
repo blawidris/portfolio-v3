@@ -15,6 +15,7 @@ const validProject = {
   stack: ["Next.js", "Next.js"],
   featured: true,
   order: 0,
+  published: true,
 }
 
 describe("administrator validation", () => {
@@ -27,6 +28,12 @@ describe("administrator validation", () => {
   it("rejects invalid project slugs and unknown fields", () => {
     expect(projectInputSchema.safeParse({ ...validProject, slug: "Not Valid" }).success).toBe(false)
     expect(projectInputSchema.safeParse({ ...validProject, privateFlag: true }).success).toBe(false)
+  })
+
+  it("tightens type and status to the real values already in use", () => {
+    expect(projectInputSchema.safeParse({ ...validProject, type: "desktop" }).success).toBe(false)
+    expect(projectInputSchema.safeParse({ ...validProject, status: "planned" }).success).toBe(false)
+    expect(projectInputSchema.safeParse({ ...validProject, type: "mobile", status: "archived" }).success).toBe(true)
   })
 
   it("accepts valid post data and rejects incomplete data", () => {

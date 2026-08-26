@@ -13,56 +13,50 @@ interface MediaItem {
   url: string
 }
 
-interface ProjectFormData {
+interface ProjectOption {
+  id: string
+  title: string
+}
+
+interface CaseStudyFormData {
   title: string
   slug: string
-  description: string
+  summary: string
   content: string
-  type: "web" | "mobile"
-  status: "live" | "in-progress" | "archived"
-  year: number
-  stack: string
-  featured: boolean
-  order: number
-  published: boolean
+  projectId: string
   coverMediaId: string
+  published: boolean
+  order: number
 }
 
-interface ProjectInitialData {
+interface CaseStudyInitialData {
   title?: string
   slug?: string
-  description?: string
+  summary?: string
   content?: string
-  type?: string
-  status?: string
-  year?: number
-  stack?: string | string[]
-  featured?: boolean
-  order?: number
-  published?: boolean
+  projectId?: string | null
   coverMediaId?: string | null
+  published?: boolean
+  order?: number
 }
 
-interface ProjectFormProps {
+interface CaseStudyFormProps {
   id?: string
-  initialData?: ProjectInitialData
+  initialData?: CaseStudyInitialData
+  projects: ProjectOption[]
 }
 
-export default function ProjectForm({ id, initialData }: ProjectFormProps) {
+export default function CaseStudyForm({ id, initialData, projects }: CaseStudyFormProps) {
   const router = useRouter()
-  const [form, setForm] = useState<ProjectFormData>({
+  const [form, setForm] = useState<CaseStudyFormData>({
     title: initialData?.title ?? "",
     slug: initialData?.slug ?? "",
-    description: initialData?.description ?? "",
+    summary: initialData?.summary ?? "",
     content: initialData?.content ?? "",
-    type: (initialData?.type as "web" | "mobile") ?? "web",
-    status: (initialData?.status as "live" | "in-progress" | "archived") ?? "live",
-    year: initialData?.year ?? new Date().getFullYear(),
-    stack: Array.isArray(initialData?.stack) ? (initialData.stack as string[]).join(", ") : (initialData?.stack ?? ""),
-    featured: initialData?.featured ?? false,
-    order: initialData?.order ?? 0,
-    published: initialData?.published ?? true,
+    projectId: initialData?.projectId ?? "",
     coverMediaId: initialData?.coverMediaId ?? "",
+    published: initialData?.published ?? true,
+    order: initialData?.order ?? 0,
   })
   const [media, setMedia] = useState<MediaItem[]>([])
   const [saving, setSaving] = useState(false)
@@ -90,19 +84,15 @@ export default function ProjectForm({ id, initialData }: ProjectFormProps) {
     const payload = {
       title: form.title,
       slug: form.slug,
-      description: form.description,
+      summary: form.summary,
       content: form.content,
-      type: form.type,
-      status: form.status,
-      year: Number(form.year),
-      stack: form.stack.split(",").map((t) => t.trim()).filter(Boolean),
-      featured: form.featured,
-      order: Number(form.order),
-      published: form.published,
+      projectId: form.projectId || undefined,
       coverMediaId: form.coverMediaId || undefined,
+      published: form.published,
+      order: Number(form.order),
     }
 
-    const url = id ? `/api/admin/projects/${id}` : "/api/admin/projects"
+    const url = id ? `/api/admin/case-studies/${id}` : "/api/admin/case-studies"
     const method = id ? "PATCH" : "POST"
 
     try {
@@ -117,18 +107,18 @@ export default function ProjectForm({ id, initialData }: ProjectFormProps) {
         return
       }
 
-      router.push("/admin/projects")
+      router.push("/admin/case-studies")
       router.refresh()
     } catch {
-      setError("The project could not be saved. Check your connection and try again.")
+      setError("The case study could not be saved. Check your connection and try again.")
     } finally {
       setSaving(false)
     }
   }
 
   async function handleDelete() {
-    await fetch(`/api/admin/projects/${id}`, { method: "DELETE" })
-    router.push("/admin/projects")
+    await fetch(`/api/admin/case-studies/${id}`, { method: "DELETE" })
+    router.push("/admin/case-studies")
     router.refresh()
   }
 
@@ -141,7 +131,7 @@ export default function ProjectForm({ id, initialData }: ProjectFormProps) {
             value={form.title}
             onChange={(e) => handleTitleChange(e.target.value)}
             className="w-full px-3 py-2.5 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-md text-lg text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-colors"
-            placeholder="Project title"
+            placeholder="Case study title"
           />
         </div>
 
@@ -151,56 +141,34 @@ export default function ProjectForm({ id, initialData }: ProjectFormProps) {
             value={form.slug}
             onChange={(e) => setForm((p) => ({ ...p, slug: e.target.value }))}
             className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-md text-sm font-mono text-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent)] transition-colors"
-            placeholder="project-slug"
+            placeholder="case-study-slug"
           />
         </div>
 
         <div>
-          <label className="block text-xs text-[var(--text-muted)] mb-1.5">Description</label>
+          <label className="block text-xs text-[var(--text-muted)] mb-1.5">Summary</label>
           <textarea
-            value={form.description}
-            onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+            value={form.summary}
+            onChange={(e) => setForm((p) => ({ ...p, summary: e.target.value }))}
             rows={2}
             className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-md text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-colors resize-none"
-            placeholder="Short description"
+            placeholder="Short summary for cards and SEO"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs text-[var(--text-muted)] mb-1.5">Type</label>
+            <label className="block text-xs text-[var(--text-muted)] mb-1.5">Linked Project (optional)</label>
             <select
-              value={form.type}
-              onChange={(e) => setForm((p) => ({ ...p, type: e.target.value as "web" | "mobile" }))}
+              value={form.projectId}
+              onChange={(e) => setForm((p) => ({ ...p, projectId: e.target.value }))}
               className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-md text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-colors"
             >
-              <option value="web">Web</option>
-              <option value="mobile">Mobile</option>
+              <option value="">None — standalone</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>{project.title}</option>
+              ))}
             </select>
-          </div>
-          <div>
-            <label className="block text-xs text-[var(--text-muted)] mb-1.5">Status</label>
-            <select
-              value={form.status}
-              onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as "live" | "in-progress" | "archived" }))}
-              className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-md text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-colors"
-            >
-              <option value="live">Live</option>
-              <option value="in-progress">In Progress</option>
-              <option value="archived">Archived</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs text-[var(--text-muted)] mb-1.5">Year</label>
-            <input
-              type="number"
-              value={form.year}
-              onChange={(e) => setForm((p) => ({ ...p, year: Number(e.target.value) }))}
-              className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-md text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-colors"
-            />
           </div>
           <div>
             <label className="block text-xs text-[var(--text-muted)] mb-1.5">Order</label>
@@ -211,25 +179,6 @@ export default function ProjectForm({ id, initialData }: ProjectFormProps) {
               className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-md text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-colors"
             />
           </div>
-        </div>
-
-        <div>
-          <label className="block text-xs text-[var(--text-muted)] mb-1.5">Stack (comma-separated)</label>
-          <input
-            value={form.stack}
-            onChange={(e) => setForm((p) => ({ ...p, stack: e.target.value }))}
-            className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-md text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-colors"
-            placeholder="Next.js, PostgreSQL, Prisma"
-          />
-          {form.stack && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {form.stack.split(",").map((t) => t.trim()).filter(Boolean).map((t) => (
-                <span key={t} className="text-xs bg-[var(--bg-card)] border border-[var(--border)] rounded px-2 py-0.5 text-[var(--text-secondary)]">
-                  {t}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
 
         <div>
@@ -261,49 +210,29 @@ export default function ProjectForm({ id, initialData }: ProjectFormProps) {
           )}
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <button
-              role="switch"
-              aria-checked={form.featured}
-              aria-label="Featured on homepage"
-              onClick={() => setForm((p) => ({ ...p, featured: !p.featured }))}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                form.featured ? "bg-[var(--accent)]" : "bg-[var(--border)]"
+        <div className="flex items-center gap-2">
+          <button
+            role="switch"
+            aria-checked={form.published}
+            aria-label="Published"
+            onClick={() => setForm((p) => ({ ...p, published: !p.published }))}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+              form.published ? "bg-[var(--accent)]" : "bg-[var(--border)]"
+            }`}
+          >
+            <span
+              className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                form.published ? "translate-x-4" : "translate-x-0.5"
               }`}
-            >
-              <span
-                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                  form.featured ? "translate-x-4" : "translate-x-0.5"
-                }`}
-              />
-            </button>
-            <span className="text-sm text-[var(--text-secondary)]">Featured on homepage</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              role="switch"
-              aria-checked={form.published}
-              aria-label="Published"
-              onClick={() => setForm((p) => ({ ...p, published: !p.published }))}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                form.published ? "bg-[var(--accent)]" : "bg-[var(--border)]"
-              }`}
-            >
-              <span
-                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                  form.published ? "translate-x-4" : "translate-x-0.5"
-                }`}
-              />
-            </button>
-            <span className="text-sm text-[var(--text-secondary)]">
-              {form.published ? "Published" : "Draft"}
-            </span>
-          </div>
+            />
+          </button>
+          <span className="text-sm text-[var(--text-secondary)]">
+            {form.published ? "Published" : "Draft"}
+          </span>
         </div>
 
         <div>
-          <label className="block text-xs text-[var(--text-muted)] mb-1.5">Content / Case Study (Markdown)</label>
+          <label className="block text-xs text-[var(--text-muted)] mb-1.5">Content (Markdown)</label>
           <textarea
             value={form.content}
             onChange={(e) => setForm((p) => ({ ...p, content: e.target.value }))}
@@ -336,7 +265,7 @@ export default function ProjectForm({ id, initialData }: ProjectFormProps) {
 
       <ConfirmModal
         isOpen={showDelete}
-        label="this project"
+        label="this case study"
         onConfirm={handleDelete}
         onCancel={() => setShowDelete(false)}
       />

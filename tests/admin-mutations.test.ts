@@ -30,6 +30,7 @@ const projectPayload = {
   stack: ["Next.js"],
   featured: false,
   order: 0,
+  published: true,
 }
 
 const postPayload = {
